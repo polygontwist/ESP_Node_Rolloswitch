@@ -1,15 +1,11 @@
 /*
   Rollowebswitcher
   433MHz
-  5C:CF:7F:2D:29:EE
   115200 Baud
 
   NodeMCU ESP12-E, 115200,  4M (3M SPIFFS), 80MHz
                                   ->weniger einstellen? (OTA)
 
- 
-*/
-/*
   Board: NodeMCU 1.0 (ESP-12E),80MHz, 115200, 4M
   Programmer: AVRISP mkll
 */
@@ -187,27 +183,6 @@ void setup() {
   server.begin();
   Serial.println("HTTP server started");
   
-/*
-  Serial.println("Dateien(SPIFFS):");
-  Dir dir = SPIFFS.openDir("/");
-  while (dir.next()) {
-    String fileName = dir.fileName();
-    size_t fileSize = dir.fileSize();
-    Serial.printf("FS File: %s, size: %s\n", fileName.c_str(), formatBytes(fileSize).c_str());
-  }
-
-  FSInfo fs_info;
-  if (SPIFFS.info(fs_info)) {
-    Serial.println("Info:");
-    Serial.println(formatBytes(fs_info.totalBytes).c_str());//2949250 (2.8MB)
-    Serial.println(formatBytes(fs_info.usedBytes).c_str());//502
-    Serial.println(fs_info.blockSize);//8192
-    Serial.println(fs_info.pageSize);//256
-    Serial.println(fs_info.maxOpenFiles);//5
-    Serial.println(fs_info.maxPathLength);//32
-  }
-*/
-
   setLED(false);
   Serial.println("ready.");
 
