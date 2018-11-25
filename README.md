@@ -1,6 +1,6 @@
 # Projekt: Wifi-433 Rollo Schalter
 
-Hier habe ich ein elektrischem Rollo mit 433Mhz Fernbedienung über ein WLAN bedienbar gemacht.
+Hier habe ich ein elektrischem Rollo mit 433Mhz Fernbedienung über ein NodeMCU mit ESP12-E bedienbar gemacht.
 
 
 ![](https://raw.githubusercontent.com/polygontwist/ESP_Node_Rolloswitch/master/bilder/screenshot.png)
