@@ -3,8 +3,15 @@
 Hier habe ich ein elektrischem Rollo mit 433Mhz Fernbedienung über ein WLAN bedienbar gemacht.
 
 
-![](https://raw.githubusercontent.com/polygontwist/ESP_sonoff_Schaltuhr/master/bilder/screenshot.png)
+![](https://raw.githubusercontent.com/polygontwist/ESP_Node_Rolloswitch/master/bilder/screenshot.png)
 
+# Setup
+das Projekt ist wie https://github.com/polygontwist/ESP_sonoff_Schaltuhr aufgebaut.
+
+Bei WIFI_SSID  WIFI_PASSWORD  müssen die eigenen Werte eingetragen werden, dabei #include "wifisetup.h" auskommentieren.
+Die Werte rollo_KEY, rollo_UP, rollo_DOWN, rollo_STOP müssen vorher auch selbst aus der Fernbedienung des Rollos ausgelesen werden.
+Damit das ganze funktioniert muss in der system.js ebenfalls der gleiche rollo_KEY eingestellt werden (Zeile 102).
+Das Teil ist dann unter dem Namen der bei ARDUINO_HOSTNAME im Netzwerk ansprechbar.
 
 # Quellen und Inspirationen
 folgende Bibliothecken wurden verwendet:
