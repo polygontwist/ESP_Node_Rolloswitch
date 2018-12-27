@@ -3,11 +3,16 @@
   433MHz
   115200 Baud
 
-  NodeMCU ESP12-E, 115200,  4M (3M SPIFFS), 80MHz
+  NodeMCU: ESP12-E, 115200,  4M (3M SPIFFS), 80MHz
                                   ->weniger einstellen? (OTA)
 
-  Board: NodeMCU 1.0 (ESP-12E),80MHz, 115200, 4M
-  Programmer: AVRISP mkll
+          Board: NodeMCU 1.0 (ESP-12E),80MHz, 115200, 4M
+          Programmer: AVRISP mkll
+
+  ESP-12E: 1M(64k) DOUT LED invertiert!
+           
+      
+  
 */
 
 #include <ESP8266WiFi.h>
@@ -25,7 +30,7 @@ myNTP oNtp;
 
 #include "data.h" //index.htm
 
-const char* progversion  = "Rollo V1.00 ota fs ntp ti";
+const char* progversion  = "Rollo V1.02 ota fs ntp ti";
 
 
 //----------------------------------------------------------------------------------------------
@@ -45,12 +50,17 @@ uint8_t MAC_array[6];
 char MAC_char[18];
 String macadresse="";
 
-#define pin_led 5        //gpio05 D1
-#define pin_ledinvert false
+#define pin_led 2           //ESP12E:2    NodeMCU:gpio05 D1
+#define pin_ledinvert true  //true              false
+
+#define pin_Button 5       //ESP12E
+#define buttMode INPUT     
+#define pin_buttoninvert false  
 
 //433MHz
-#define sender433PIN 4        //gpio04 D2 Sender
+#define sender433PIN 4   //ESP12E:4   NodeMCU:gpio04 D2 Sender
 
+/*
 const char* rollo_KEY =   "Q00QFF0F0Q00Q10";
 const char* rollo_UP =    "Q00QFF0F0Q00Q10F0F0F";//3x(oder 3x mehr) + 6x F0F1Q
 const char* rollo_DOWN =  "Q00QFF0F0Q00Q10F0101";//3x(oder 3x mehr) + 6x F0110
@@ -58,6 +68,7 @@ const char* rollo_STOP =  "Q00QFF0F0Q00Q10FFFFF";//3x
 
 #define WIFI_SSID         "yourWIFISSID"
 #define WIFI_PASSWORD     "yourWLANPassword"
+*/
 
 #include "wifisetup.h" //reale Daten 
 
@@ -76,6 +87,26 @@ File fsUploadFile;                      //Hält den aktuellen Upload
 unsigned long tim_zeitchecker= 15*1000;//alle 15sec Timer checken
 unsigned long tim_previousMillis=0;
 byte last_minute;
+
+
+
+
+#define check_wlanasclient 30000      //alle 30 Sekunden*2 gucken ob noch verbunden, wenn nicht neuer Versuch
+                                      //zwischen 30 und 60 Sekunden
+unsigned long check_wlanasclient_previousMillis=0;
+#define anzahlVersuche 10             //nach 10 Versuchen im AP-Modus bleiben
+#define keinAPModus true              //true=immer wieder versuchen ins WLAN zu kommen
+
+bool isAPmode=false;
+int anzahlVerbindungsversuche=0;
+
+
+unsigned long butt_zeitchecker= 120;//ms min presstime
+unsigned long butt_previousMillis=0;
+unsigned long buttpresstime=0;
+
+
+
 
 //---------------------------------------------
 //format bytes
@@ -107,9 +138,65 @@ bool getLED(){
      return digitalRead(pin_led)==HIGH;
     }
 }
+
+
 //---------------------------------------------
+void connectWLAN(){
+   setLED(true);
+  
+   anzahlVerbindungsversuche++;
+   OTA.setup(WIFI_SSID, WIFI_PASSWORD, ARDUINO_HOSTNAME);//connect to WLAN
+   isAPmode=!(WiFi.status() == WL_CONNECTED);
+   Serial.print("mode: ");
+   if(isAPmode)
+      Serial.println("AP");
+      else
+      Serial.println("client");
 
+  macadresse="";
+  WiFi.macAddress(MAC_array);
+  for (int i = 0; i < sizeof(MAC_array); ++i) {
+    if(i>0) macadresse+=":";
+    macadresse+= String(MAC_array[i], HEX);
+  }
+  Serial.print("MAC: ");
+  Serial.println(macadresse);
 
+  Serial.print("Connected to ");
+  Serial.println(WIFI_SSID);
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP()); 
+
+  if(isAPmode){
+      setLED(true);
+      delay(500);
+      setLED(false);
+      delay(250);
+      setLED(true);
+      delay(500);
+      setLED(false);
+      delay(250);
+      setLED(true);
+      delay(500);
+      setLED(false);
+      delay(250);
+    }
+    else{
+      anzahlVerbindungsversuche=0;//erfolgreich verbunden, Zaehler auf 0 setzen
+      setLED(false);
+   }
+}
+
+bool getButton(){
+  if(pin_buttoninvert){
+     return digitalRead(pin_Button)==LOW;
+    }
+    else{
+     return digitalRead(pin_Button)==HIGH;
+    }
+}
+
+//---------------------------------------------
 
 
 void setup() {
@@ -131,18 +218,23 @@ void setup() {
   pinMode(pin_led, OUTPUT);
   setLED(true);
 
+  pinMode(pin_Button, buttMode); 
+
+
   //OTA
   OTA.onMessage([](char *message, int line) {
     toogleLED();
     Serial.print(">");
     Serial.println(message);
   });
-  OTA.setup(WIFI_SSID, WIFI_PASSWORD, ARDUINO_HOSTNAME);//connect to WLAN
+
 
   //SPIFFS
   SPIFFS.begin();
   
-
+  connectWLAN();
+  
+/*
   //get MAC
   WiFi.macAddress(MAC_array);
   for (int i = 0; i < sizeof(MAC_array); ++i) {
@@ -157,7 +249,7 @@ void setup() {
   Serial.println(WIFI_SSID);
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
-
+*/
   /*
     if (MDNS.begin("esp8266")) {//??
       Serial.println("MDNS responder started");
@@ -207,6 +299,96 @@ void loop() {
         last_minute=oNtp.getminute();
      }
    } 
+
+    //WLAN-ceck
+ unsigned long cwl=random(check_wlanasclient, check_wlanasclient+check_wlanasclient);//x..x+15sec sonst zu viele Anfragen am AP
+ if(currentMillis - check_wlanasclient_previousMillis > cwl){
+      //zeit abgelaufen
+      check_wlanasclient_previousMillis = currentMillis;
+       if(isAPmode){//apmode
+        //neuer Verbindengsaufbauversuch
+         if(anzahlVerbindungsversuche<anzahlVersuche || keinAPModus){//nur x-mal, dann im AP-Mode bleiben
+               connectWLAN();
+         }
+      }
+ }
+
+
+ //Button
+  if( currentMillis - butt_previousMillis > butt_zeitchecker){//alle 120ms
+     butt_previousMillis=currentMillis;
+    
+     if (!getButton()) {//up
+        if( buttpresstime>0){
+           setLED(false);
+           //digitalWrite(pin_led, true);//LED off
+           Serial.println(buttpresstime);
+           if(buttpresstime>6000){//ca. 6 sec
+              Serial.println("Restart ESP");
+              //restart
+              setLED(true);
+              delay(500);
+              setLED(false);
+              delay(500);
+              setLED(true);
+              delay(500);
+              setLED(false);
+              delay(500);
+              setLED(true);
+              delay(500);
+              setLED(false);
+              delay(500);
+              ESP.restart();
+           }
+           else
+           {
+           //was anderes tun
+            Serial.println("toogle Butt");
+            
+            Serial.print("MAC: ");
+            Serial.println(macadresse);
+          
+            Serial.print("Connected to ");
+            Serial.println(WIFI_SSID);
+            Serial.print("IP address: ");
+            Serial.println(WiFi.localIP()); 
+
+            Serial.print("FreeHeap : ");
+            Serial.println(ESP.getFreeHeap());
+
+            //ESP.getChipId() returns the ESP8266 chip ID as a 32-bit integer.
+            Serial.print("Chip ID : ");
+            Serial.println(ESP.getChipId());
+          
+            //ESP.getFlashChipId() returns the flash chip ID as a 32-bit integer.
+            Serial.print("Flash Chip ID : 0x");
+            Serial.println(ESP.getFlashChipId(),HEX);
+             
+            //ESP.getFlashChipSize() returns the flash chip size, in bytes, as seen by the SDK (may be less than actual size).
+            Serial.print("Flash Chip Size : ");
+            Serial.println(ESP.getFlashChipSize());
+
+            //ESP.getFlashChipSpeed(void) returns the flash chip frequency, in Hz.
+            Serial.print("Flash Chip Speed : ");
+            Serial.println(ESP.getFlashChipSpeed());
+          
+            //ESP.getCycleCount() returns the cpu instruction cycle count since start as an unsigned 32-bit. This is useful for accurate timing of very short actions like bit banging.
+            Serial.print("Cycle Count : ");
+            Serial.println(ESP.getCycleCount());
+            
+           }
+           buttpresstime=0;
+        }
+      }
+      else
+      {//down
+        buttpresstime+=butt_zeitchecker;//Zeit merken +=120ms
+        if(buttpresstime>6000)
+              toogleLED();
+            else
+              setLED(true);//LED an
+       }
+  }
 }
 
 //-------------------Timer---------------
@@ -302,7 +484,7 @@ void checktimer(){
             if(ntp_wochentag==5)maske=32;//Serial.print(" Sa");
             if(ntp_wochentag==6)maske=64;//Serial.print(" So");
 
-            if(tage & maske ){Serial.print(" isday,");
+            if(tage & maske ){//Serial.print(" isday,");
               if(ntp_stunde==t_st && ntp_minute==t_min){
                   if(befehl=="UP"){Serial.println(" >UP");  
                       RolloBefehl(1, 1);
