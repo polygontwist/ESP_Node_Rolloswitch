@@ -426,7 +426,7 @@ var timerliste=function(){
 						
 			div=cE(ziel,"div",undefined,"utctimset");
 			div.innerHTML="UTC Zeitunterschied:";
-			var val=Math.floor(jdat.datum.timekorr/60/60);
+			var val=Math.floor(jdat.datum.timekorr);
 			node=cI(div,"number",val,"Zeitunterschied");
 			node.addEventListener('change',changetimekorr);
 			node.maxlength=2;
