@@ -30,7 +30,7 @@ myNTP oNtp;
 
 #include "data.h" //index.htm
 
-const char* progversion  = "Rollo V1.02 ota fs ntp ti";
+const char* progversion  = "Rollo V1.02 ota+fs+ntp+ti";
 
 
 //----------------------------------------------------------------------------------------------

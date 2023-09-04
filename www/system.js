@@ -1,4 +1,4 @@
-// V25.11.2018
+// V22.05.2022
 var getpostData =function(url, auswertfunc,POSTdata,noheader,rh){
 		var loader,i;
 		try {loader=new XMLHttpRequest();}
@@ -99,7 +99,7 @@ var filterJSON=function(s){
  
 	
 var rollo433=function(){//lokal ESP_Node_Rolloswitch
-	var ESP8266URL="./action?rkey=Q00QFF0F0Q00Q10&rollo=";//
+	var ESP8266URL="./action?rkey=QQ00F00F0F00Q10&rollo=";//
 	var URLbefehle={
 		"UP":	ESP8266URL+"UP",
 		"DOWN":	ESP8266URL+"DOWN",
@@ -127,9 +127,18 @@ var rollo433=function(){//lokal ESP_Node_Rolloswitch
 	}
 	//Daten laden/senden
 	var ini=function(){
-		var i,nodelist;		
+		var i,nodelist,atr,a;		
 		nodelist=getNodeByAttr(document,"data-433");	
-		for(i=0;i<nodelist.length;i++)nodelist[i].addEventListener('click', buttclick);
+		for(i=0;i<nodelist.length;i++){
+			a=nodelist[i];
+			atr=a.getAttribute("data-433");
+			if(atr.indexOf('29.5')>-1){
+				atr=atr.split('29.5').join('6.0');
+				a.innerHTML="UP 6.0s";
+				a.setAttribute("data-433",atr);
+			}
+			a.addEventListener('click', buttclick);
+		}
 	}
 	var buttclick=function(e){
 		var atr=this.getAttribute("data-433"),json=filterJSON(atr);
