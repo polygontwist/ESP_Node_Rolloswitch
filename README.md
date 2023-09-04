@@ -22,3 +22,5 @@ folgende Bibliothecken wurden verwendet:
 * time
 * FS (SPIFFS)  http://esp8266.github.io/Arduino/versions/2.3.0/doc/filesystem.html#uploading-files-to-file-system
 
+# Hardware
+![Steckplatine](https://github.com/polygontwist/ESP_Node_Rolloswitch/blob/master/bilder/steckplatine_rollo.jpg)
